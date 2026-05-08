@@ -6,16 +6,27 @@
     box-sizing: border-box;
 }
 
+html {
+    width: 380px;
+    min-width: 380px;
+}
+
 body {
+    width: 380px;
+    min-width: 380px;
+    max-width: 380px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 14px;
     line-height: 1.5;
     color: #333;
     background: #f8f9fa;
+    writing-mode: horizontal-tb;
+    text-orientation: mixed;
+    overflow-x: hidden;
 }
 
 .popup-container {
-    width: 380px;
+    width: 100%;
     min-height: 500px;
     display: flex;
     flex-direction: column;
@@ -285,7 +296,7 @@ section h2 {
     font-size: 11px;
 }
 
-.footer .actions {
+.popup-footer .actions {
     display: flex;
     gap: 8px;
 }

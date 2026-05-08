@@ -3,21 +3,16 @@ package com.otpautofill.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.telephony.SmsMessage
+import android.provider.Telephony
 import android.util.Log
 import com.otpautofill.service.OTPProcessingService
 import com.otpautofill.utils.OTPParser
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 /**
  * BroadcastReceiver for intercepting incoming SMS messages and detecting OTPs
  */
-@AndroidEntryPoint
 class SmsReceiver : BroadcastReceiver() {
-
-    @Inject
-    lateinit var otpParser: OTPParser
+    private val otpParser = OTPParser()
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Telephony.Sms.Intents.SMS_RECEIVED_ACTION) {

@@ -12,27 +12,18 @@ import androidx.core.app.NotificationCompat
 import com.otpautofill.R
 import com.otpautofill.data.OTPRepository
 import com.otpautofill.utils.EncryptionUtils
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 /**
  * Service for processing detected OTPs and sending them to connected browsers
  */
-@AndroidEntryPoint
 class OTPProcessingService : Service() {
-
-    @Inject
-    lateinit var otpRepository: OTPRepository
-
-    @Inject
-    lateinit var encryptionUtils: EncryptionUtils
-
-    @Inject
-    lateinit var webSocketManager: WebSocketManager
+    private lateinit var otpRepository: OTPRepository
+    private lateinit var encryptionUtils: EncryptionUtils
+    private lateinit var webSocketManager: WebSocketManager
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private lateinit var notificationManager: NotificationManager
@@ -50,6 +41,9 @@ class OTPProcessingService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        otpRepository = OTPRepository(this)
+        encryptionUtils = EncryptionUtils()
+        webSocketManager = WebSocketManager()
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel()
         

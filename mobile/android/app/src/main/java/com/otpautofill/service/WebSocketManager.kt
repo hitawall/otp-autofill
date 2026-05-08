@@ -1,21 +1,17 @@
 package com.otpautofill.service
 
 import android.util.Log
-import com.otpautofill.data.model.BrowserConnection
 import com.otpautofill.data.repository.BrowserConnectionRepository
 import kotlinx.coroutines.*
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
 import java.net.URI
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * Manages WebSocket connections to browser extensions
  */
-@Singleton
-class WebSocketManager @Inject constructor(
-    private val connectionRepository: BrowserConnectionRepository
+class WebSocketManager(
+    private val connectionRepository: BrowserConnectionRepository = BrowserConnectionRepository()
 ) {
 
     private val activeConnections = mutableMapOf<String, WebSocketClient>()

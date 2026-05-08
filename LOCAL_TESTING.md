@@ -1,213 +1,257 @@
-# Local Testing Guide
+# Local Personal-Use Setup Guide (Chrome + Android)
 
-## Prerequisites
+This guide is for getting this project functional for your own day-to-day use, without publishing to any store.
 
-### Android Phone Setup
-1. **Enable Developer Options**
-   - Go to Settings → About phone → Tap "Build number" 7 times
-   - Enable "USB debugging" in Developer options
+## 0) Reality Check (Current Project Status)
 
-2. **Install ADB** (if not already installed)
-   ```bash
-   brew install android-platform-tools
-   ```
+Right now, the repo is a working **prototype**, not a complete app:
 
-3. **Verify Connection**
-   ```bash
-   adb devices
-   ```
-   Your phone should appear in the list
+- Extension popup/content/background exist and mostly work.
+- Android has OTP parser + receiver + WebSocket manager skeleton.
+- End-to-end flow is not fully wired yet.
 
-### Chrome Extension Setup
-1. **Load Extension in Developer Mode**
-   - Open Chrome
-   - Go to `chrome://extensions/`
-   - Enable "Developer mode" (top right toggle)
-   - Click "Load unpacked"
-   - Select `chrome-extension/dist` folder
-   - Click "Load"
+Major gaps you must close first:
 
-2. **Verify Extension**
-   - Extension should appear in Chrome toolbar
-   - Click extension icon → Should show popup
+1. Missing Android classes referenced by manifest and services:
+   - `OTPApplication`
+   - `ui/MainActivity`
+   - `service/WebSocketService`
+   - repositories and encryption classes referenced by `OTPProcessingService`
+2. Message contract mismatch between Android and extension auth.
+3. Crypto contract mismatch in extension (`decrypt()` usage vs return shape).
+4. Popup/options send some message types that background does not handle.
+5. Pairing UI shows placeholder QR text (no real QR image yet).
 
-## Testing Workflow
+Use the phases below in order.
 
-### Step 1: Start WebSocket Server
+---
+
+## 1) Basic Machine Setup
+
+### 1.1 Install base tools (macOS)
+
 ```bash
-# Navigate to extension directory
-cd chrome-extension
-
-# Build extension (development mode)
-npm run build
-
-# Start extension in development mode
-npm run dev
+brew install node
+brew install android-platform-tools
 ```
 
-### Step 2: Pair Your Phone
-1. **Open Extension Popup**
-   - Click OTP Auto-Fill icon in Chrome toolbar
-   - Click "Pair New Device"
+Check versions:
 
-2. **Generate QR Code**
-   - Extension will show QR code and pairing code
-   - Note the pairing code (6-8 characters)
-
-3. **Open Mobile App**
-   - Launch the Android app (if built)
-   - Or use the APK from `mobile/android/app/build/outputs/apk/debug/`
-
-4. **Scan QR Code**
-   - In mobile app, select "Scan QR Code"
-   - Point camera at the QR code shown in extension popup
-
-5. **Complete Pairing**
-   - Mobile app should show "Connected" status
-   - Extension should show "1 device(s) connected"
-
-### Step 3: Test OTP Detection
-1. **Send Test OTP**
-   - Use another phone or ask a friend to send test OTP SMS
-   - Format: "Your OTP is 123456"
-
-2. **Verify Detection**
-   - Mobile app should detect and process the OTP
-   - Extension should show notification: "OTP received"
-
-3. **Test Auto-Fill**
-   - Open any website with OTP field (e.g., gmail.com, bank login)
-   - OTP should appear in extension popup
-   - Click "Fill OTP" or click on OTP field
-   - OTP should be automatically filled
-
-### Step 4: Test Real Communication
-1. **Open Browser Console**
-   - Right-click extension icon → "Inspect popup"
-   - Go to Console tab
-
-2. **Send Test OTP**
-   - Mobile app sends OTP via WebSocket
-   - Console should show logs:
-     ```
-     WebSocket connection established
-     OTP received: 123456
-     Broadcasting to content scripts
-     ```
-
-3. **Check Network Tab**
-   - Console → Network tab
-   - Should see WebSocket connection to `ws://localhost:8765`
-
-## Troubleshooting
-
-### Common Issues & Solutions
-
-**Issue: Extension not loading**
-- **Solution**: Check Chrome developer mode is enabled
-- **Solution**: Verify `manifest.json` syntax
-- **Solution**: Check Chrome console for errors
-
-**Issue: WebSocket connection failed**
-- **Solution**: Check if port 8765 is available
-- **Solution**: Verify firewall is not blocking localhost
-- **Solution**: Restart extension: `chrome://extensions/ → Reload`
-
-**Issue: OTP not detected**
-- **Solution**: Check SMS permissions on Android
-- **Solution**: Verify sender number matches known patterns
-- **Solution**: Check OTP parser regex patterns
-
-**Issue: Auto-fill not working**
-- **Solution**: Check if website uses standard OTP input fields
-- **Solution**: Verify content script is injected
-- **Solution**: Check browser console for JavaScript errors
-
-## Advanced Testing
-
-### Test Multiple OTP Formats
 ```bash
-# Test different OTP patterns
-echo "Your OTP is 1234" | sms send YOUR_PHONE_NUMBER
-echo "Your verification code: 567890" | sms send YOUR_PHONE_NUMBER
-echo "Enter 987654 to verify" | sms send YOUR_PHONE_NUMBER
+node -v
+npm -v
+adb version
 ```
 
-### Test Security Features
-1. **Encryption Verification**
-   - Send OTP and verify it's encrypted in transit
-   - Check console logs for encryption/decryption messages
+### 1.2 Android phone setup
 
-2. **Device Authentication**
-   - Try pairing with wrong QR code
-   - Verify authentication fails gracefully
-   - Test device removal and re-pairing
+1. Enable Developer Options (tap Build Number 7 times).
+2. Enable USB debugging.
+3. Connect phone with USB.
+4. Verify:
 
-3. **Performance Testing**
-   - Monitor extension memory usage
-   - Test with multiple tabs open
-   - Verify WebSocket connection stability
+```bash
+adb devices
+```
 
-## Manual Build & Install
+Expected: your device appears as `device` (not `unauthorized`).
 
-### Build Extension
+---
+
+## 2) Build and Load Chrome Extension
+
+### 2.1 Install extension dependencies
+
 ```bash
 cd chrome-extension
+npm install
+```
+
+### 2.2 Build extension
+
+```bash
 npm run build
 ```
 
-### Build Android App
+### 2.3 Load in Chrome
+
+1. Open `chrome://extensions/`
+2. Enable Developer mode
+3. Click **Load unpacked**
+4. Select: `chrome-extension/dist`
+5. Pin extension to toolbar and open popup
+
+### 2.4 Verify extension runtime
+
+1. In `chrome://extensions/`, open details for this extension.
+2. Click **service worker** inspect.
+3. Confirm logs show startup and WebSocket port selection.
+4. In extension popup, verify UI loads correctly.
+
+---
+
+## 3) Make Android App Buildable (Required Before Integration)
+
+The Android app currently cannot be used as-is for personal daily use. Fix these first:
+
+1. Add missing app entry classes:
+   - `OTPApplication`
+   - `MainActivity`
+   - `WebSocketService`
+2. Either:
+   - implement missing repositories/utilities used by `OTPProcessingService`, or
+   - simplify `OTPProcessingService` to remove those dependencies.
+3. Fix `SmsReceiver` imports and compile issues (`Telephony` usage).
+4. Ensure app requests and handles runtime permissions:
+   - SMS permissions
+   - notification permission on Android 13+
+
+Then build:
+
 ```bash
 cd mobile/android
+./gradlew clean
 ./gradlew assembleDebug
 ```
 
-### Install Android APK
-```bash
-# Install debug APK
-adb install mobile/android/app/build/outputs/apk/debug/app-debug.apk
+Install APK:
 
-# Grant permissions when prompted
-# SMS, Network, Storage
+```bash
+adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## Production Readiness Checklist
+---
 
-### Chrome Extension
-- [ ] All tests passing
-- [ ] No console errors
-- [ ] WebSocket server starts correctly
-- [ ] QR code generation works
-- [ ] Auto-fill works on test sites
+## 4) Make Pairing/Auth Contract Match
 
-### Android App
-- [ ] APK builds without errors
-- [ ] SMS receiver works
-- [ ] OTP parser detects test messages
-- [ ] WebSocket connection to browser works
-- [ ] Permissions requested correctly
+Before testing real OTP transfer, align Android and extension message formats.
 
-### Integration
-- [ ] End-to-end OTP flow works
-- [ ] Multiple device support
-- [ ] Error handling is robust
-- [ ] Performance is acceptable
+### 4.1 Extension currently expects auth message like:
 
-## Next Steps
+```json
+{
+  "type": "auth",
+  "token": "<base64 json>",
+  "deviceInfo": {
+    "name": "My Pixel",
+    "type": "mobile",
+    "platform": "android"
+  }
+}
+```
 
-1. **Fix any issues** found during testing
-2. **Add more test cases** for edge cases
-3. **Optimize performance** for production
-4. **Prepare store submissions** (Chrome Web Store, Google Play)
-5. **Set up analytics** for production monitoring
+### 4.2 Android currently sends auth without `deviceInfo`
 
-## Support
+Update Android `WebSocketManager.createAuthMessage()` so it includes `deviceInfo`.
 
-If you encounter issues:
-1. **Check Chrome Console**: `chrome://extensions/ → Inspect → Console`
-2. **Check Android Logs**: `adb logcat`
-3. **Review Network Tab**: WebSocket connection status
-4. **Test with Different Browsers**: Firefox, Edge compatibility
-5. **File Issues**: Create GitHub issues with detailed logs
+### 4.3 Ensure token format matches extension verification
 
-Happy testing! 🚀
+`DeviceManager.authenticateDevice()` expects token payload with:
+- `pairingCode`
+- `signature` (HMAC of serialized `deviceInfo` with pairing secret)
+
+Your Android pairing/token generation must produce exactly this.
+
+---
+
+## 5) Fix OTP Decryption/Data Contract
+
+In extension background:
+
+- `CryptoUtils.decrypt()` returns `{ success, data }`
+- current code treats return as plain string
+
+Fix `background.js` OTP handling to:
+1. read decrypt result object,
+2. validate `success`,
+3. use `result.data` as OTP code.
+
+Also ensure Android encrypts with the same key/material expected by extension decrypt.
+
+For personal use, you can temporarily bypass encryption during bring-up:
+- send plaintext OTP from Android,
+- accept plaintext in extension,
+- then re-enable encryption once flow is stable.
+
+---
+
+## 6) Bring End-to-End Flow to Green
+
+After phases 3-5:
+
+1. Start extension (loaded in Chrome).
+2. Start Android app on phone.
+3. Pair device from extension popup.
+4. Confirm extension shows device connected.
+5. Send test SMS OTP to phone.
+6. Confirm:
+   - Android logs OTP parsed
+   - WebSocket send succeeds
+   - extension popup lists OTP
+   - OTP autofills into active OTP input field in browser tab
+
+Useful logs:
+
+```bash
+adb logcat | rg -i "otp|websocket|sms|error"
+```
+
+and extension:
+- service worker console
+- popup inspect console
+- target page console (for content script behavior)
+
+---
+
+## 7) Daily Use Workflow (After Functional)
+
+Once green, this is your normal routine:
+
+1. Connect phone (USB debugging) or ensure same transport method you implemented.
+2. Open Chrome and ensure extension is enabled.
+3. Verify device shows connected in popup.
+4. Keep phone app running in foreground/background service as needed.
+5. Use websites normally; OTP should appear and autofill.
+
+If OTP is not appearing:
+1. Reload extension.
+2. Reconnect device.
+3. Check `adb logcat`.
+4. Re-pair once.
+
+---
+
+## 8) Personal Reliability Hardening Checklist
+
+Do these before depending on it daily:
+
+- [ ] Auto-reconnect Android WebSocket on network/process drops.
+- [ ] Graceful handling when extension service worker restarts.
+- [ ] Persist last paired connection details locally on Android.
+- [ ] Add a manual "Send test OTP" action in Android app UI.
+- [ ] Add "connection health" indicator in extension popup.
+- [ ] Add fallback manual OTP insert path (already partially present).
+- [ ] Keep OTP retention short (5 min is good).
+
+---
+
+## 9) Suggested Implementation Order (Fastest Path)
+
+1. Make Android compile and launch.
+2. Align auth message/token format.
+3. Fix extension decrypt handling.
+4. Validate OTP appears in popup.
+5. Validate content script autofill on 2-3 real websites.
+6. Harden reconnect + lifecycle behavior.
+
+---
+
+## 10) Known Non-Goals for Now
+
+Skip these until personal flow is stable:
+
+- Chrome Web Store packaging
+- Play Store release
+- iOS support
+- advanced settings/options page features not wired in background
+

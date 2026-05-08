@@ -2,14 +2,11 @@ package com.otpautofill.utils
 
 import android.util.Log
 import java.util.regex.Pattern
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * Utility class for parsing OTP codes from SMS messages
  */
-@Singleton
-class OTPParser @Inject constructor() {
+class OTPParser {
 
     data class ParsedOTP(
         val code: String,
