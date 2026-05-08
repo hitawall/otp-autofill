@@ -1,0 +1,48 @@
+{
+  "name": "otp-autofill",
+  "version": "1.0.0",
+  "description": "Secure OTP auto-fill Chrome extension with mobile companion app",
+  "main": "index.js",
+  "scripts": {
+    "build:extension": "cd extension && npm run build",
+    "dev:extension": "cd extension && npm run dev",
+    "test:extension": "cd extension && npm run test",
+    "test:mobile": "cd mobile/android && ./gradlew test && cd ../ios && xcodebuild test",
+    "test:e2e": "npm run test:extension && npm run test:mobile",
+    "test:all": "npm run test:extension && npm run test:mobile && npm run test:e2e",
+    "setup": "npm install && cd extension && npm install",
+    "lint": "eslint extension/src/**/*.js mobile/android/**/*.kt mobile/ios/**/*.swift",
+    "format": "prettier --write .",
+    "clean": "rm -rf extension/dist mobile/android/app/build mobile/ios/build"
+  },
+  "keywords": [
+    "otp",
+    "autofill",
+    "chrome-extension",
+    "security",
+    "mobile",
+    "sms"
+  ],
+  "author": "OTP Auto-Fill Team",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.45.0",
+    "prettier": "^3.0.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.2.3"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{kt,swift}": [
+      "prettier --write"
+    ]
+  }
+}

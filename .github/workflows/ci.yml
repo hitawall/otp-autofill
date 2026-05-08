@@ -1,0 +1,290 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Chrome Extension Tests
+  test-extension:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: extension/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd extension
+        npm ci
+    
+    - name: Run linting
+      run: |
+        cd extension
+        npm run lint
+    
+    - name: Run tests
+      run: |
+        cd extension
+        npm run test:coverage
+    
+    - name: Build extension
+      run: |
+        cd extension
+        npm run build
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: extension/coverage/lcov.info
+        flags: extension
+        name: extension-coverage
+
+  # Android Tests
+  test-android:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+    
+    - name: Cache Gradle packages
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+    
+    - name: Grant execute permission for gradlew
+      run: |
+        cd mobile/android
+        chmod +x gradlew
+    
+    - name: Run unit tests
+      run: |
+        cd mobile/android
+        ./gradlew test
+    
+    - name: Run lint
+      run: |
+        cd mobile/android
+        ./gradlew lint
+    
+    - name: Build debug APK
+      run: |
+        cd mobile/android
+        ./gradlew assembleDebug
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: android-test-results
+        path: mobile/android/app/build/reports/tests/
+    
+    - name: Upload APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: android-debug-apk
+        path: mobile/android/app/build/outputs/apk/debug/*.apk
+
+  # iOS Tests (macOS only)
+  test-ios:
+    runs-on: macos-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    
+    - name: Install dependencies
+      run: |
+        cd mobile/ios
+        if [ -f "Podfile" ]; then
+          pod install
+        fi
+    
+    - name: Run iOS tests
+      run: |
+        cd mobile/ios
+        xcodebuild test \
+          -workspace OTPAutoFill.xcworkspace \
+          -scheme OTPAutoFill \
+          -destination 'platform=iOS Simulator,name=iPhone 14,OS=latest' \
+          -enableCodeCoverage YES
+    
+    - name: Build iOS app
+      run: |
+        cd mobile/ios
+        xcodebuild build \
+          -workspace OTPAutoFill.xcworkspace \
+          -scheme OTPAutoFill \
+          -destination 'platform=iOS Simulator,name=iPhone 14,OS=latest'
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: ios-test-results
+        path: mobile/ios/build/reports/
+
+  # Security Scans
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+    
+    - name: Run CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      with:
+        languages: javascript, kotlin
+
+  # Build and Package
+  build-and-package:
+    needs: [test-extension, test-android]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: extension/package-lock.json
+    
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+    
+    - name: Build extension
+      run: |
+        cd extension
+        npm ci
+        npm run build
+    
+    - name: Build Android release
+      run: |
+        cd mobile/android
+        chmod +x gradlew
+        ./gradlew assembleRelease
+    
+    - name: Create release package
+      run: |
+        mkdir -p release
+        cp -r extension/dist release/extension
+        cp mobile/android/app/build/outputs/apk/release/*.apk release/
+        cp README.md LICENSE release/
+        cd release
+        zip -r ../otp-autofill-release.zip .
+    
+    - name: Upload release artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-package
+        path: otp-autofill-release.zip
+
+  # Deploy to Staging (on develop branch)
+  deploy-staging:
+    needs: [build-and-package]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Download release artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: release-package
+        path: ./release
+    
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add deployment logic here
+        # Could upload to staging server, test environment, etc.
+
+  # Deploy to Production (on main branch)
+  deploy-production:
+    needs: [build-and-package, security-scan]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Download release artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: release-package
+        path: ./release
+    
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: OTP Auto-Fill v${{ github.run_number }}
+        draft: false
+        prerelease: false
+    
+    - name: Upload Release Assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./release/otp-autofill-release.zip
+        asset_name: otp-autofill-v${{ github.run_number }}.zip
+        asset_content_type: application/zip
+    
+    - name: Deploy to Chrome Web Store
+      run: |
+        echo "Deploying to Chrome Web Store..."
+        # Add Chrome Web Store deployment logic here
+        # Could use chrome-webstore-upload CLI or API
+    
+    - name: Deploy to Google Play Store
+      run: |
+        echo "Deploying to Google Play Store..."
+        # Add Google Play Store deployment logic here
+        # Could use fastlane or Google Play API

@@ -1,0 +1,43 @@
+name: Branch Protection Setup
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  setup-branch-protection:
+    runs-on: ubuntu-latest
+    if: github.repository == github.event.repository.full_name
+    
+    steps:
+    - name: Setup Branch Protection
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          try {
+            await github.rest.repos.updateBranchProtection({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: 'main',
+              required_status_checks: {
+                strict: true,
+                contexts: ['ci/ci']
+              },
+              enforce_admins: true,
+              required_pull_request_reviews: {
+                required_approving_review_count: 1,
+                dismiss_stale_reviews: true,
+                require_code_owner_reviews: false,
+                required_reviewer_dismissal_allowances: [],
+                bypass_pull_request_allowances: []
+              },
+              restrictions: {
+                users: [],
+                teams: ['core-team']
+              }
+            });
+            console.log('Branch protection configured successfully');
+          } catch (error) {
+            console.log('Branch protection might already exist or insufficient permissions:', error.message);
+          }
