@@ -1,0 +1,429 @@
+/* OTP Auto-Fill Content Script Styles */
+
+/* OTP Field Highlighting */
+.otp-autofill-highlight {
+    border: 2px solid #667eea !important;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
+    background-color: rgba(102, 126, 234, 0.05) !important;
+    position: relative;
+}
+
+.otp-autofill-highlight::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 16px;
+    height: 16px;
+    background: #667eea;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
+    z-index: 1000;
+}
+
+.otp-autofill-highlight::before {
+    content: '🔐';
+}
+
+/* Floating UI */
+.otp-autofill-floating-ui {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 320px;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    z-index: 10000;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.otp-autofill-content {
+    padding: 16px;
+}
+
+.otp-autofill-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.otp-autofill-title {
+    font-weight: 600;
+    color: #495057;
+    font-size: 16px;
+}
+
+.otp-autofill-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #6c757d;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.otp-autofill-close:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.otp-autofill-body {
+    margin-bottom: 16px;
+}
+
+.otp-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+.otp-sender {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.otp-code {
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    color: #495057;
+    letter-spacing: 2px;
+}
+
+.otp-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.otp-fill-btn, .otp-copy-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.otp-fill-btn {
+    background: #667eea;
+    color: white;
+}
+
+.otp-fill-btn:hover {
+    background: #5a6fd8;
+    transform: translateY(-1px);
+}
+
+.otp-copy-btn {
+    background: #6c757d;
+    color: white;
+}
+
+.otp-copy-btn:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+}
+
+/* OTP Suggestions */
+.otp-autofill-suggestion {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.otp-autofill-suggestion-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f8f9fa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.otp-autofill-suggestion-item:hover {
+    background-color: #f8f9fa;
+}
+
+.otp-autofill-suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.otp-suggestion-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.otp-suggestion-sender {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.otp-suggestion-code {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.otp-suggestion-time {
+    font-size: 11px;
+    color: #6c757d;
+}
+
+.otp-suggestion-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.otp-suggestion-btn {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.otp-suggestion-fill {
+    background: #667eea;
+    color: white;
+}
+
+.otp-suggestion-fill:hover {
+    background: #5a6fd8;
+}
+
+.otp-suggestion-copy {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.otp-suggestion-copy:hover {
+    background: #dee2e6;
+}
+
+/* Loading States */
+.otp-autofill-loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.otp-autofill-spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid #e9ecef;
+    border-top: 2px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Success States */
+.otp-autofill-success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: fadeIn 0.3s ease;
+}
+
+.otp-autofill-success::before {
+    content: '✓';
+    font-weight: bold;
+}
+
+/* Error States */
+.otp-autofill-error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: fadeIn 0.3s ease;
+}
+
+.otp-autofill-error::before {
+    content: '✗';
+    font-weight: bold;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .otp-autofill-floating-ui {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+    }
+    
+    .otp-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .otp-actions {
+        width: 100%;
+    }
+    
+    .otp-suggestion-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .otp-suggestion-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .otp-autofill-floating-ui {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    .otp-autofill-header {
+        border-bottom-color: #4a5568;
+    }
+    
+    .otp-autofill-title {
+        color: #e2e8f0;
+    }
+    
+    .otp-info {
+        background: #4a5568;
+    }
+    
+    .otp-sender {
+        color: #a0aec0;
+    }
+    
+    .otp-code {
+        color: #e2e8f0;
+    }
+    
+    .otp-autofill-suggestion {
+        background: #2d3748;
+        border-color: #4a5568;
+    }
+    
+    .otp-autofill-suggestion-item:hover {
+        background-color: #4a5568;
+    }
+    
+    .otp-autofill-highlight {
+        background-color: rgba(102, 126, 234, 0.1) !important;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .otp-autofill-highlight {
+        border-width: 3px !important;
+        border-color: #000000 !important;
+    }
+    
+    .otp-autofill-floating-ui {
+        border-width: 2px;
+    }
+    
+    .otp-fill-btn, .otp-copy-btn {
+        border: 1px solid currentColor;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .otp-autofill-floating-ui,
+    .otp-autofill-success,
+    .otp-autofill-error,
+    .otp-autofill-suggestion-item,
+    .otp-fill-btn,
+    .otp-copy-btn {
+        animation: none;
+        transition: none;
+    }
+    
+    .otp-autofill-spinner {
+        animation: none;
+        border: 2px solid #667eea;
+    }
+}

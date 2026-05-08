@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTP Auto-Fill</title>
+    <link rel="stylesheet" href="../styles/popup.css">
+</head>
+<body>
+    <div class="popup-container">
+        <header class="popup-header">
+            <div class="logo">
+                <img src="../icons/icon48.png" alt="OTP Auto-Fill" />
+                <h1>OTP Auto-Fill</h1>
+            </div>
+            <div class="connection-status" id="connectionStatus">
+                <span class="status-dot"></span>
+                <span class="status-text">Disconnected</span>
+            </div>
+        </header>
+
+        <main class="popup-main">
+            <section class="otp-section" id="otpSection">
+                <h2>Available OTPs</h2>
+                <div class="otp-list" id="otpList">
+                    <div class="empty-state">
+                        <p>No OTPs available</p>
+                        <small>OTPs will appear here when received</small>
+                    </div>
+                </div>
+            </section>
+
+            <section class="device-section">
+                <h2>Connected Devices</h2>
+                <div class="device-list" id="deviceList">
+                    <div class="empty-state">
+                        <p>No devices connected</p>
+                        <small>Pair your mobile device to get started</small>
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="pairDeviceBtn">
+                    <span class="icon">+</span>
+                    Pair New Device
+                </button>
+            </section>
+
+            <section class="quick-actions">
+                <button class="btn btn-secondary" id="manualOtpBtn">
+                    <span class="icon">🔢</span>
+                    Manual OTP Entry
+                </button>
+                <button class="btn btn-secondary" id="settingsBtn">
+                    <span class="icon">⚙️</span>
+                    Settings
+                </button>
+            </section>
+        </main>
+
+        <footer class="popup-footer">
+            <div class="version">
+                <small>Version 1.0.0</small>
+            </div>
+            <div class="actions">
+                <button class="btn-link" id="helpBtn">Help</button>
+                <button class="btn-link" id="feedbackBtn">Feedback</button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Pairing Modal -->
+    <div class="modal" id="pairingModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Pair New Device</h3>
+                <button class="modal-close" id="closePairingModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="pairing-steps">
+                    <div class="step">
+                        <h4>Step 1: Install Mobile App</h4>
+                        <p>Download the OTP Auto-Fill app on your mobile device</p>
+                        <div class="download-buttons">
+                            <button class="download-btn" id="downloadAndroidBtn">
+                                <span class="icon">🤖</span>
+                                Android
+                            </button>
+                            <button class="download-btn" id="downloadiOSBtn">
+                                <span class="icon">🍎</span>
+                                iOS
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="step">
+                        <h4>Step 2: Scan QR Code</h4>
+                        <p>Scan this QR code with your mobile app</p>
+                        <div class="qr-code-container">
+                            <div id="qrCode" class="qr-code">
+                                <!-- QR code will be generated here -->
+                            </div>
+                            <button class="btn btn-secondary" id="regenerateQRBtn">Regenerate</button>
+                        </div>
+                    </div>
+                    
+                    <div class="step">
+                        <h4>Step 3: Confirm Pairing</h4>
+                        <p>Wait for your device to connect</p>
+                        <div class="pairing-status" id="pairingStatus">
+                            <div class="loading-spinner hidden"></div>
+                            <span class="status-text">Ready to pair</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual OTP Modal -->
+    <div class="modal" id="manualOtpModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Manual OTP Entry</h3>
+                <button class="modal-close" id="closeManualModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="manualOtpForm">
+                    <div class="form-group">
+                        <label for="otpCode">OTP Code</label>
+                        <input type="text" id="otpCode" name="otpCode" maxlength="8" pattern="[0-9]{4,8}" required>
+                        <small>Enter 4-8 digit OTP code</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="otpSender">Sender (Optional)</label>
+                        <input type="text" id="otpSender" name="otpSender" placeholder="e.g., SBI, Google">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelManualBtn">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add OTP</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

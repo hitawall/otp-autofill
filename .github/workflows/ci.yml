@@ -19,32 +19,30 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: extension/package-lock.json
+        cache-dependency-path: chrome-extension/package-lock.json
     
     - name: Install dependencies
       run: |
-        cd extension
-        npm ci
+        cd chrome-extension && npm ci
     
     - name: Run linting
       run: |
-        cd extension
+        cd chrome-extension
         npm run lint
     
     - name: Run tests
       run: |
-        cd extension
+        cd chrome-extension
         npm run test:coverage
     
     - name: Build extension
       run: |
-        cd extension
-        npm run build
+        cd chrome-extension && npm run build
     
     - name: Upload coverage reports
       uses: codecov/codecov-action@v3
       with:
-        file: extension/coverage/lcov.info
+        file: chrome-extension/coverage/lcov.info
         flags: extension
         name: extension-coverage
 
@@ -186,7 +184,7 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: extension/package-lock.json
+        cache-dependency-path: chrome-extension/package-lock.json
     
     - name: Setup Java
       uses: actions/setup-java@v3

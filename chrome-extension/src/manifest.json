@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "OTP Auto-Fill",
+  "version": "1.0.0",
+  "description": "Secure OTP auto-fill from your mobile phone",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "notifications",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://localhost:*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "OTP Auto-Fill",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_page": "options.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*", "styles/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

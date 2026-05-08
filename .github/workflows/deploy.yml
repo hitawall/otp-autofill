@@ -1,0 +1,172 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    outputs:
+      extension-version: ${{ steps.version.outputs.version }}
+      android-version: ${{ steps.version.outputs.android-version }}
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: extension/package-lock.json
+    
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+    
+    - name: Extract version
+      id: version
+      run: |
+        EXT_VERSION=$(node -p "require('./chrome-extension/package.json').version")
+        ANDROID_VERSION=$(node -p "require('./mobile/android/app/build.gradle').match(/versionName '([^']+)/)[1]")
+        echo "version=$EXT_VERSION" >> $GITHUB_OUTPUT
+        echo "android-version=$ANDROID_VERSION" >> $GITHUB_OUTPUT
+    
+    - name: Install dependencies
+      run: |
+        cd chrome-extension && npm ci
+        cd ../mobile/android && ./gradlew assembleDebug
+    
+    - name: Run tests
+      run: |
+        cd chrome-extension && npm test
+        cd ../mobile/android && ./gradlew test
+    
+    - name: Build extension
+      run: |
+        cd chrome-extension && npm run build
+    
+    - name: Build Android APK
+      run: |
+        cd mobile/android && ./gradlew assembleRelease
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifacts
+        path: |
+          chrome-extension/dist/
+          mobile/android/app/build/outputs/apk/release/
+        retention-days: 30
+
+  deploy-staging:
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'staging' || github.ref == 'refs/heads/main'
+    environment: staging
+    
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/download-artifact@v3
+      with:
+        name: build-artifacts
+    
+    - name: Deploy to Chrome Web Store (Beta)
+      run: |
+        echo "Deploying to Chrome Web Store beta channel..."
+        # Add chrome-webstore-upload CLI integration
+        # chrome-webstore-upload upload --auto-publish --client-id $CHROME_CLIENT_ID --client-secret $CHROME_CLIENT_SECRET --extension-id $CHROME_EXTENSION_ID chrome-extension/dist/
+    
+    - name: Deploy to Google Play (Internal Testing)
+      run: |
+        echo "Deploying to Google Play internal testing..."
+        # Add fastlane or Google Play API integration
+        # fastlane supply --track internal --apk mobile/android/app/build/outputs/apk/release/*.apk
+
+  deploy-production:
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'production'
+    environment: production
+    
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/download-artifact@v3
+      with:
+        name: build-artifacts
+    
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ needs.test-and-build.outputs.extension-version }}
+        release_name: OTP Auto-Fill v${{ needs.test-and-build.outputs.extension-version }}
+        draft: false
+        prerelease: false
+    
+    - name: Deploy to Chrome Web Store
+      run: |
+        echo "Deploying to Chrome Web Store production..."
+        # Production deployment logic
+    
+    - name: Deploy to Google Play Store
+      run: |
+        echo "Deploying to Google Play Store production..."
+        # Production deployment logic
+    
+    - name: Deploy to App Store
+      run: |
+        echo "Deploying to Apple App Store..."
+        # App Store deployment logic (requires Xcode)
+
+  live-testing:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'staging'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup E2E Testing Environment
+      run: |
+        # Create testing environment
+        docker-compose up -d
+        
+    - name: Run E2E Tests
+      run: |
+        # Install Playwright for browser testing
+        npm install -g @playwright/test
+        
+        # Run E2E tests against staging environment
+        npm run test:e2e:staging
+    
+    - name: Generate Test Report
+      run: |
+        # Generate comprehensive test report
+        npm run test:report
+    
+    - name: Notify Team
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        message: |
+          🚀 Staging Deployment Complete
+          Version: ${{ needs.test-and-build.outputs.extension-version }}
+          E2E Tests: ${{ job.status }}
+          Test Environment: https://staging.otp-autofill.com
